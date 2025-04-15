@@ -1,3 +1,3 @@
-import UniApi from "./_UniApi/UniApi.js";
+import UniApi from "./UniApi.js";
 
 export default UniApi

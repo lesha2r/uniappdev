@@ -1,4 +1,7 @@
 declare module "validno"
 declare module "mongodb"
+declare module "mongomod"
 declare module "xlsx/xlsx.mjs"
 declare module "jsonrawtoxlsx"
+declare module "jsonwebtoken"
+declare module "bcrypt"
