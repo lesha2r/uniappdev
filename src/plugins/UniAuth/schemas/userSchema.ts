@@ -1,7 +1,7 @@
 import {ObjectId} from 'mongodb';
 import Schema from 'validno';
 
-const userSchema = new Schema({
+const userSchemaObj = {
   _id: {
     type: ObjectId,
     required: false,
@@ -20,6 +20,9 @@ const userSchema = new Schema({
   password: {
     type: String,
     required: true,
+    rules: {
+      lengthMinMax: [8, 64],
+    }
   },
   updatedAt: {
     type: Date,
@@ -29,7 +32,9 @@ const userSchema = new Schema({
     type: Date,
     required: false,
   },
-});
+}
+
+const userSchema = new Schema(userSchemaObj);
 
 export const userMongoSchema = {
   name: 'string',

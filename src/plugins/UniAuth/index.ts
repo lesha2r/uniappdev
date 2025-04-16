@@ -4,6 +4,14 @@ import mongomod from 'mongomod';
 import userSchema, {userMongoSchema} from './schemas/userSchema.js';
 import tokenSchema, {tokenMongoSchema} from './schemas/tokenSchema.js';
 import buildAuthApi from './api/index.js';
+import config from './config.js';
+import _common from '../../utils/_common.js';
+import { UniAuthErrorMessages } from './constants.js';
+import authUserMw from './middlewares/authUserMw.js';
+import { TReq, TRes } from '../../types/express.js';
+import { NextFunction } from 'express';
+import setReqUniAuthObj from './middlewares/setReqUniAuthObj.js';
+import { ApiActions, AuthActions } from '../../constants.js';
 
 const COL_NAME_PREFIX_TOKENS = '_tokens';
 
@@ -15,6 +23,7 @@ interface AuthCreateInput {
   dbTokensCollection?: string;
   type: string;
   jwtConfig: AuthCreateInputJWT;
+  allowedActions: AuthActions[]
 }
 
 interface AuthCreateInputJWT {
@@ -24,7 +33,7 @@ interface AuthCreateInputJWT {
   refreshLiveTime?: string;
 }
 
-interface JwtConfiguration {
+export interface JwtConfiguration {
   accessTokenSecret: string;
   refreshTokenSecret: string;
   accTokenLiveTime: string;
@@ -64,6 +73,7 @@ export type TUniAuth = {
     tokensCollection: object | null;
   }
   models: Models;
+  allowedActions: AuthActions[];
   api: any;
 }
 
@@ -82,16 +92,17 @@ class UniAuth implements TUniAuth {
     tokensCollection: object | null;
   };
   models: Models;
+  allowedActions: AuthActions[];
   api: any;
 
   constructor(authCreateInput: AuthCreateInput) {
-    this.name = authCreateInput.name;
-    this.type = authCreateInput.type;
+    this.name = authCreateInput.name || config.authNameDefault;
+    this.type = authCreateInput.type || config.authTypeDefault;
     this.jwtConfig = {
       accessTokenSecret: authCreateInput.jwtConfig.accessSecret,
       refreshTokenSecret: authCreateInput.jwtConfig.refreshSecret,
-      accTokenLiveTime: authCreateInput.jwtConfig.accessLiveTime || '60m',
-      refTokenLiveTime: authCreateInput.jwtConfig.refreshLiveTime || '1m',
+      accTokenLiveTime: authCreateInput.jwtConfig.accessLiveTime || config.jwtDefaults.accessToken.expiresIn,
+      refTokenLiveTime: authCreateInput.jwtConfig.refreshLiveTime || config.jwtDefaults.refreshToken.expiresIn,
     };
 
     this.dbInfo = {
@@ -133,7 +144,51 @@ class UniAuth implements TUniAuth {
       tokenSchema,
     };
 
+    this.allowedActions = authCreateInput.allowedActions || Object.values(AuthActions)
+
+    this.ensureIndex()
     this.api = buildAuthApi(this);
+  }
+
+  async ensureIndex(tryCount = 0, maxTryCount = 10): Promise<void> {
+    // @ts-ignore
+    const client = await this.db.collection.getClient();
+    if (!client) {
+      await _common.addDelay(1000);
+      tryCount++;
+
+      if (tryCount > maxTryCount) {
+        throw new Error(UniAuthErrorMessages.MONGO_DB_CLIENT_UNAVAILABLE);
+      }
+
+      return this.ensureIndex(tryCount, maxTryCount);
+    }
+
+    const db = client.db(this.dbInfo.dbName);
+    const col = db.collection(this.dbInfo.dbCollectionName);
+    await col.createIndex({ email: 1 }, { unique: true });
+  }
+
+  authRequest() {
+    return (req: TReq, res: TRes, next: NextFunction) => {
+      const callNext = () => {
+        console.log('MW: callNext')
+        next()
+      }
+
+      const mws = [setReqUniAuthObj, authUserMw, callNext]
+      
+      const callNextByIndex = (i: number, middlewares: Function[]) => {
+        if (i >= middlewares.length) return;
+        const mw = middlewares[i];
+
+        mw.call(this, req, res, () => {
+          callNextByIndex(i + 1, middlewares);
+        });
+      }
+
+      callNextByIndex(0, mws);
+    }
   }
 }
 

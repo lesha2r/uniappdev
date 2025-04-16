@@ -10,7 +10,8 @@ function signoutController(uniAuthOptions: TUniAuth): ICustomRoute {
     path: 'signout',
     method: HttpMethods.POST,
     middlewares: [
-      middlewares.authUserMw,
+      (...args) => middlewares.setReqUniAuthObj.call(uniAuthOptions, ...args),
+      (...args) => middlewares.authUserMw.call(uniAuthOptions, ...args),
     ],
     controller: async function(req: TReqAuthed, res: TRes, next: NextFunction) {
       const user = req.__uniAuth.user;

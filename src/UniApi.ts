@@ -89,12 +89,12 @@ const cfgSchema = new Schema({
           const errors: string[] = [];
           const result = arr.every((item) => {
             const pathOk = 'path' in item && typeof item.path === 'string';
-            const methodOk = 'method' in item && [HttpMethods.POST, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE].includes(item.method.toUpperCase());
+            const methodOk = 'method' in item && [HttpMethods.POST, HttpMethods.GET, HttpMethods.PATCH, HttpMethods.PUT, HttpMethods.DELETE].includes(item.method.toLowerCase());
             const mwOk = ('middlewares' in item === false) || (typeof item.middlewares === 'function' || Array.isArray(item.middlewares));
             const ctrlOk = 'controller' in item && typeof item.controller === 'function';
 
             if (!pathOk) errors.push('path');
-            if (!methodOk) errors.push('method');
+            if (!methodOk) errors.push('method ' + item.method);
             if (!mwOk) errors.push('middlewares');
             if (!ctrlOk) errors.push('controller');
 

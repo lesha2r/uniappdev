@@ -1,9 +1,11 @@
 import { NextFunction } from "express";
 import UniController from "../../../controllers/UniController.js";
 import { TReq, TRes } from "../../../types/express.js";
+import { TUniAuth } from "../index.js";
 
-const setReqUniAuthObj = (req: TReq, res: TRes, next: NextFunction) => {
+function setReqUniAuthObj (this: TUniAuth, req: TReq, res: TRes, next: NextFunction) {
   try {
+    console.log('MW: setReqUniAuthObj');
     if ('__uniAuth' in req) return next();
 
     req.__uniAuth = {

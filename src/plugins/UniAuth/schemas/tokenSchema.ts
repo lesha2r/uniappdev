@@ -1,7 +1,8 @@
 import {ObjectId} from 'mongodb';
 import Schema from 'validno';
+import { UniAuthTokenTypes } from '../constants.js';
 
-const tokenSchema = new Schema({
+const tokenSchemaObj = {
   _id: {
     type: ObjectId,
     required: false,
@@ -14,7 +15,7 @@ const tokenSchema = new Schema({
     type: String,
     required: true,
     rules: {
-      enum: ['refresh', 'access'],
+      enum: [UniAuthTokenTypes.REFRESH, UniAuthTokenTypes.ACCESS],
     },
   },
   token: {
@@ -33,11 +34,14 @@ const tokenSchema = new Schema({
     type: Date,
     required: false,
   },
-});
+}
+
+const tokenSchema = new Schema(tokenSchemaObj);
 
 export const tokenMongoSchema = {
   user: 'any',
   token: 'string',
+  type: 'string',
   session: 'number',
   updatedAt: 'date',
   createdAt: 'date',

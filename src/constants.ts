@@ -6,6 +6,14 @@ export enum HttpMethods {
   DELETE = 'delete',
 }
 
+export enum AuthActions {
+  SIGNIN = 'signin',
+  SIGNUP = 'signup',
+  SIGNOUT = 'signout',
+  REFRESH = 'refresh',
+
+}
+
 export enum ApiActions {
   GET = 'get',
   GETALL = 'getAll',
