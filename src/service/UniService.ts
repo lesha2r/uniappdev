@@ -67,7 +67,7 @@ class UniService {
 
     input.pagination = false;
 
-    if (this.methods.export.columns) {
+    if (!input.fields && this.methods.export.columns && Array.isArray(this.methods.export.columns)) {
       const fields = this.methods.export.columns.map((col: any) => col.key);
       input.fields = fields;
     }
