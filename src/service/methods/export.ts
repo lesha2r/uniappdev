@@ -1,5 +1,5 @@
-import ExportService from '../../plugins/UniExport/index.js';
-import { ICustomSaver } from '../../plugins/UniExport/createFile.js';
+import ExportService from '../../addons/UniExport/index.js';
+import { ICustomSaver } from '../../addons/UniExport/createFile.js';
 
 interface Column {
   key: string;

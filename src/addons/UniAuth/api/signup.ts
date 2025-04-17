@@ -10,6 +10,7 @@ import _validations from '../../../utils/_validations.js';
 import signinService from '../services/signinService.js';
 import _api from '../../../utils/_api.js';
 import { UniAuthErrorMessages } from '../constants.js';
+import { TReq } from '../../../types/express.js';
 
 const validateReqBody = (schema: typeof Schema, body: {[key: string]: any}) => {
   if (!_validations.isObject(body)) throw new ApiError(400, 'Missing body or it is incorrect')
@@ -22,7 +23,14 @@ function signupController(uniAuthOptions: TUniAuth): ICustomRoute {
   return {
     path: 'signup',
     method: HttpMethods.POST,
-    controller: async function(this: TUniAuth, req: Request, res: Response, next: NextFunction) {
+    controller: async function(this: TUniAuth, req: TReq, res: Response, next: NextFunction) {
+      const hasAccessToken = req.headers['authorization'] || req.headers['Authorization']
+      const isAuthed = req.__uniAuth && req.__uniAuth.authed === true
+
+      if (hasAccessToken || isAuthed) {
+        throw new ApiError(400, UniAuthErrorMessages.ALREADY_REGISTERED);
+      }
+
       const userSchema = uniAuthOptions.models.userSchema
       
       const body = req.body

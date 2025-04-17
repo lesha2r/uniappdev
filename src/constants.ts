@@ -11,7 +11,7 @@ export enum AuthActions {
   SIGNUP = 'signup',
   SIGNOUT = 'signout',
   REFRESH = 'refresh',
-
+  VERIFY = 'verify',
 }
 
 export enum ApiActions {

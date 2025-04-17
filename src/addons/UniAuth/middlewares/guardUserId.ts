@@ -6,8 +6,7 @@ import { UniAuthErrorMessages } from "../constants.js";
 
 const guardUserIdMw = (req: TReq, res: Response, next: NextFunction) => {
   try {
-    console.log('[AUTH mw] guardUserIdMw');
-
+    console.log("mw.guardUserIdMw");
     const userId = req.__uniAuth!.user._id ? req.__uniAuth?.user?._id.toString() : null;
     const paramsId = req.params?.id ? req.params?.id : undefined;
 

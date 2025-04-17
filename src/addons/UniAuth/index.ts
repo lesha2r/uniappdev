@@ -6,16 +6,15 @@ import tokenSchema, {tokenMongoSchema} from './schemas/tokenSchema.js';
 import buildAuthApi from './api/index.js';
 import config from './config.js';
 import _common from '../../utils/_common.js';
-import { UniAuthErrorMessages } from './constants.js';
+import { COL_NAME_PREFIX_TOKENS, UniAuthErrorMessages, UniAuthTypes } from './constants.js';
 import authUserMw from './middlewares/authUserMw.js';
+import setReqUniAuthObj from './middlewares/setReqUniAuthObj.js';
+import { AuthActions } from '../../constants.js';
+import _validateConfig from './utils/_validateConfig.js';
 import { TReq, TRes } from '../../types/express.js';
 import { NextFunction } from 'express';
-import setReqUniAuthObj from './middlewares/setReqUniAuthObj.js';
-import { ApiActions, AuthActions } from '../../constants.js';
 
-const COL_NAME_PREFIX_TOKENS = '_tokens';
-
-interface AuthCreateInput {
+export interface AuthCreateInput {
   name: string;
   dbCredentials: DbCredentials;
   dbName: string;
@@ -23,7 +22,7 @@ interface AuthCreateInput {
   dbTokensCollection?: string;
   type: string;
   jwtConfig: AuthCreateInputJWT;
-  allowedActions: AuthActions[]
+  allowedActions?: AuthActions[]
 }
 
 interface AuthCreateInputJWT {
@@ -68,9 +67,9 @@ export type TUniAuth = {
     dbTokensCollectionName: string;
   }
   db: {
-    connection: {connect(): void},  //mongomod.Connection;
-    collection: object | null;
-    tokensCollection: object | null;
+    connection: ReturnType<typeof mongomod.Connection>;
+    collection: ReturnType<typeof mongomod.Controller> | null;
+    tokensCollection: ReturnType<typeof mongomod.Controller> | null;
   }
   models: Models;
   allowedActions: AuthActions[];
@@ -87,39 +86,41 @@ class UniAuth implements TUniAuth {
     dbTokensCollectionName: string;
   };
   db: {
-    connection: { connect(): void };
-    collection: object | null;
-    tokensCollection: object | null;
+    connection: ReturnType<typeof mongomod.Connection>;
+    collection: ReturnType<typeof mongomod.Controller> | null;
+    tokensCollection: ReturnType<typeof mongomod.Controller> | null;
   };
   models: Models;
   allowedActions: AuthActions[];
   api: any;
 
-  constructor(authCreateInput: AuthCreateInput) {
-    this.name = authCreateInput.name || config.authNameDefault;
-    this.type = authCreateInput.type || config.authTypeDefault;
+  constructor(input: AuthCreateInput) {
+    _validateConfig.validate(input);
+
+    this.name = input.name || config.authNameDefault;
+    this.type = input.type || config.authTypeDefault;
     this.jwtConfig = {
-      accessTokenSecret: authCreateInput.jwtConfig.accessSecret,
-      refreshTokenSecret: authCreateInput.jwtConfig.refreshSecret,
-      accTokenLiveTime: authCreateInput.jwtConfig.accessLiveTime || config.jwtDefaults.accessToken.expiresIn,
-      refTokenLiveTime: authCreateInput.jwtConfig.refreshLiveTime || config.jwtDefaults.refreshToken.expiresIn,
+      accessTokenSecret: input.jwtConfig.accessSecret,
+      refreshTokenSecret: input.jwtConfig.refreshSecret,
+      accTokenLiveTime: input.jwtConfig.accessLiveTime || config.jwtDefaults.accessToken.expiresIn,
+      refTokenLiveTime: input.jwtConfig.refreshLiveTime || config.jwtDefaults.refreshToken.expiresIn,
     };
 
     this.dbInfo = {
-      dbName: authCreateInput.dbCredentials.dbName,
-      dbCollectionName: authCreateInput.dbCredentials.collection || authCreateInput.name,
+      dbName: input.dbCredentials.dbName,
+      dbCollectionName: input.dbCredentials.collection || input.name,
       dbTokensCollectionName:
-        authCreateInput.dbCredentials.tokensCollection || authCreateInput.name + COL_NAME_PREFIX_TOKENS,
+        input.dbCredentials.tokensCollection || input.name + COL_NAME_PREFIX_TOKENS,
     };
 
     this.db = {
       connection: new mongomod.Connection({
-        link: authCreateInput.dbCredentials.link,
-        login: authCreateInput.dbCredentials.login,
-        password: authCreateInput.dbCredentials.password,
-        dbName: authCreateInput.dbCredentials.dbName,
-        debug: authCreateInput.dbCredentials.debug,
-        srv: authCreateInput.dbCredentials.srv,
+        link: input.dbCredentials.link,
+        login: input.dbCredentials.login,
+        password: input.dbCredentials.password,
+        dbName: input.dbCredentials.dbName,
+        debug: input.dbCredentials.debug,
+        srv: input.dbCredentials.srv,
       }),
       collection: null,
       tokensCollection: null,
@@ -144,14 +145,16 @@ class UniAuth implements TUniAuth {
       tokenSchema,
     };
 
-    this.allowedActions = authCreateInput.allowedActions || Object.values(AuthActions)
+    this.allowedActions = input.allowedActions || Object.values(AuthActions)
 
     this.ensureIndex()
     this.api = buildAuthApi(this);
   }
 
+  /**
+   * Creates unique index for email field in the DB collection
+   */
   async ensureIndex(tryCount = 0, maxTryCount = 10): Promise<void> {
-    // @ts-ignore
     const client = await this.db.collection.getClient();
     if (!client) {
       await _common.addDelay(1000);
@@ -166,30 +169,20 @@ class UniAuth implements TUniAuth {
 
     const db = client.db(this.dbInfo.dbName);
     const col = db.collection(this.dbInfo.dbCollectionName);
-    await col.createIndex({ email: 1 }, { unique: true });
+    await col.createIndex({ [UniAuthTypes.EMAIL]: 1 }, { unique: true });
   }
 
-  authRequest() {
-    return (req: TReq, res: TRes, next: NextFunction) => {
-      const callNext = () => {
-        console.log('MW: callNext')
-        next()
-      }
-
-      const mws = [setReqUniAuthObj, authUserMw, callNext]
-      
-      const callNextByIndex = (i: number, middlewares: Function[]) => {
-        if (i >= middlewares.length) return;
-        const mw = middlewares[i];
-
-        mw.call(this, req, res, () => {
-          callNextByIndex(i + 1, middlewares);
-        });
-      }
-
-      callNextByIndex(0, mws);
-    }
-  }
+  /**
+   * Creates a middleware for authenticating requests
+   */
+  authRequest = (req: TReq, res: TRes, next: NextFunction) => {
+    const middlewares = [setReqUniAuthObj.bind(this), authUserMw.bind(this)];
+    const chain = middlewares.reduceRight(
+      (nextFn: NextFunction, mw) => () => mw(req, res,  nextFn),
+      next
+    );
+    chain();
+  };
 }
 
 export default UniAuth;

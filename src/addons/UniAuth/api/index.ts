@@ -8,6 +8,7 @@ import signoutController from './signout.js';
 import refreshController from './refresh.js';
 import { TUniAuth } from '../index.js';
 import { IUniApiInput } from '../../../types/UniApiTypes.js';
+import verifyController from './verify.js';
 
 function buildAuthApi(options: TUniAuth) {
   if (!options) {
@@ -32,6 +33,8 @@ function buildAuthApi(options: TUniAuth) {
         return signoutController(options);
       case 'refresh':
         return refreshController(options);
+      case 'verify':
+        return verifyController(options);
       default:
         throw new Error(`Unknown action: ${action}`);
     }

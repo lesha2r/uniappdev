@@ -5,7 +5,7 @@ import { TUniAuth } from "../index.js";
 
 function setReqUniAuthObj (this: TUniAuth, req: TReq, res: TRes, next: NextFunction) {
   try {
-    console.log('MW: setReqUniAuthObj');
+    console.log('mw.setReqUniAuthObj');
     if ('__uniAuth' in req) return next();
 
     req.__uniAuth = {

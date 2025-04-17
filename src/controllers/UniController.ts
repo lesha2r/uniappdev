@@ -36,9 +36,8 @@ function responseError(this: any, err: any, req: Request | TReq, res: Response):
 
   res.status(err.code || 500).json({
     ok: false,
-    details: 'Ошибка при обработке запроса',
     error: err.message,
-    errorDetails: err.detailed || null,
+    errorDetails: err.detailed || undefined,
   });
 }
 

@@ -9,14 +9,13 @@ import { UniAuthErrorMessages } from '../constants.js';
 
 const errorsByMessage = {
   'jwt expired': {
-    text: 'Токен просрочен',
+    text: UniAuthErrorMessages.ACCESS_TOKEN_EXPIRED,
     code: 401,
   },
 };
 
 function authUserMw(this: TUniAuth, req: TReq, res: TRes, next: NextFunction) {
   try {
-    console.log('MW: authUserMw');
     if (!req.__uniAuth) throw new Error(UniAuthErrorMessages.MISSING_UNI_AUTH);
     
     const accessToken = req.headers.authorization || req.headers.Authorization;
