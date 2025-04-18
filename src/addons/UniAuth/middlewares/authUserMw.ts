@@ -12,11 +12,15 @@ const errorsByMessage = {
     text: UniAuthErrorMessages.ACCESS_TOKEN_EXPIRED,
     code: 401,
   },
+  'invalid signature': {
+    text: UniAuthErrorMessages.INVALID_SIGNATURE,
+    code: 401,
+  },
 };
 
 function authUserMw(this: TUniAuth, req: TReq, res: TRes, next: NextFunction) {
   try {
-    if (!req.__uniAuth) throw new Error(UniAuthErrorMessages.MISSING_UNI_AUTH);
+    if (!req.__uniAuth) throw new ApiError(400, UniAuthErrorMessages.MISSING_UNI_AUTH);
     
     const accessToken = req.headers.authorization || req.headers.Authorization;
     if (!accessToken) throw new ApiError(401, UniAuthErrorMessages.MISSING_ACCESS_TOKEN);
@@ -38,8 +42,8 @@ function authUserMw(this: TUniAuth, req: TReq, res: TRes, next: NextFunction) {
 
     next();
   } catch (err: any) {
-    const apiError = new ApiError(500, err.message);
-
+    const apiError = new ApiError(401, err.message);
+    
     if (err && err.message && err.message in errorsByMessage === true) {
       //@ts-ignore
       apiError.message = errorsByMessage[err.message].text;

@@ -4,6 +4,7 @@ import jsonrawtoxlsx from 'jsonrawtoxlsx';
 import _files from '../../utils/_files.js';
 import config from '../../config/config.js';
 import _validations from '../../utils/_validations.js';
+import ApiError from '../../utils/ApiError.js';
 
 const DEFAULT_EXTENSION = 'xlsx';
 const DEFAULT_FILENAME = 'export';
@@ -60,7 +61,7 @@ const createFile = (
   options: IOptions = defaultOptions
 ): TOutput => {
   if (!_validations.isArray(headersArr)) {
-    throw new Error('headersArr должен быть массивом');
+    throw new ApiError(400, 'headersArr должен быть массивом');
   }
 
   let output: TOutput = {

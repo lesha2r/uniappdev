@@ -11,6 +11,7 @@ export enum UniAuthTypes {
 
 export enum UniAuthErrorMessages {
     INTERNAL_ERROR = 'Internal server error',
+    INVALID_SIGNATURE = 'Invalid signature',
     FAILED_TO_SIGNIN_DURING_SIGNUP = 'Failed to signin created user',
     WRONG_PASSWORD = 'Wrong password',
     ALREADY_REGISTERED = 'Impossible to signup while already logged in',
