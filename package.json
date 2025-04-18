@@ -8,7 +8,7 @@
     "tscw": "tsc --b --watch src/",
     "dev": "nodemon dev/index.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "prepare": "npm version patch & tsc"
+    "prepare": "npm version patch && tsc"
   },
   "repository": {
     "type": "git",
