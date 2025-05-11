@@ -3,9 +3,9 @@ import _api from '../../utils/_api.js';
 import _validations from '../../utils/_validations.js';
 import Pipes from '../pipes/index.js';
 import UniController from '../UniController.js';
-import { ApiActionsMethods } from '../../constants.js';
+import { ApiActions } from '../../constants.js';
 
-const METHOD_ID = ApiActionsMethods.CREATE;
+const METHOD_ID = ApiActions.CREATE;
 
 async function createRecord(
   this: UniController,
